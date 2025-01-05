@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { DiffView } from '../components/DiffView';
+import { UnsavedChangesDetector } from '../components/UnsavedChangesDetector';
 
 // Types
 type DiffResult = 
@@ -267,6 +269,19 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
         this.diffStrategy = new SearchReplaceDiffStrategy();
     }
 
+    private diffView?: DiffView;
+
+    private addLineNumbers(content: string): string {
+        const lines = content.split('\n');
+        const maxLineNumberWidth = String(lines.length).length;
+        return lines
+            .map((line, index) => {
+                const lineNumber = String(index + 1).padStart(maxLineNumberWidth, ' ');
+                return `${lineNumber} | ${line}`;
+            })
+            .join('\n');
+    }
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<ApplyDiffInput>,
         _token: vscode.CancellationToken
@@ -278,10 +293,14 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
             }
 
             const fullPath = path.join(workspaceFolder.uri.fsPath, options.input.path);
-            const originalContent = await fs.readFile(fullPath, 'utf-8');
+            
+            // First check for any unsaved changes
+            const unsavedChanges = await UnsavedChangesDetector.detectChanges(options.input.path);
+            // Use editor content if there are unsaved changes, otherwise use disk content
+            const baseContent = unsavedChanges.editorContent || await fs.readFile(fullPath, 'utf-8');
 
             const result = this.diffStrategy.applyDiff(
-                originalContent,
+                baseContent, // Apply diff to current content, not disk content
                 options.input.diff,
                 options.input.start_line,
                 options.input.end_line
@@ -291,13 +310,43 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
                 throw new Error(result.error);
             }
 
-            await fs.writeFile(fullPath, result.content, 'utf-8');
+            // Show diff view with current content as base
+            this.diffView = new DiffView(fullPath, baseContent);
+            await this.diffView.show();
+            
+            // Apply changes gradually to show the diff
+            const lines = result.content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                await this.diffView.update(
+                    lines.slice(0, i + 1).join('\n'),
+                    i
+                );
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            // Get the latest content with unsaved changes
+            const unsavedResult = await UnsavedChangesDetector.detectChanges(options.input.path);
+            const currentContent = unsavedResult.editorContent || result.content;
+            
+            // Create response with current file state
+            const response = [
+                `Changes shown in diff view for ${options.input.path}.`,
+                '',
+                'Current file state:',
+                '=' .repeat(80),
+                this.addLineNumbers(currentContent)
+            ].join('\n');
+
+            console.log('Success diffapply response:', response);
 
             return new vscode.LanguageModelToolResult([
-                new vscode.LanguageModelTextPart(`Successfully applied diff to ${options.input.path}`)
+                new vscode.LanguageModelTextPart(response)
             ]);
 
         } catch (error) {
+            if (this.diffView) {
+                await this.diffView.close();
+            }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error(`Failed to apply diff: ${errorMessage}`);
             return new vscode.LanguageModelToolResult([

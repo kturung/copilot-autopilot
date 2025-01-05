@@ -114,6 +114,34 @@
                     },
                     "required": ["paths"]
                 }
+            },
+            {
+                "name": "cogent_applyDiff",
+                "tags": ["files", "update", "diff"],
+                "displayName": "Apply Diff",
+                "modelDescription": "This tool allows for precise, surgical replaces to files by specifying exactly what content to search for and what to replace it with",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "Relative path to the file to modify"
+                        },
+                        "diff": {
+                            "type": "string",
+                            "description": "Diff content in the format: <<<<<<< SEARCH\\n[search content]\\n=======\\n[replace content]\\n>>>>>>> REPLACE"
+                        },
+                        "start_line": {
+                            "type": "number",
+                            "description": "Line number where the search block starts"
+                        },
+                        "end_line": {
+                            "type": "number",
+                            "description": "Line number where the search block ends"
+                        }
+                    },
+                    "required": ["path", "diff", "start_line", "end_line"]
+                }
             }
         ]
     },

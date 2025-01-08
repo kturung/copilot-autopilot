@@ -129,7 +129,6 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 
 ## Critical Rules
 - Always create a PLAN section first by thinking step-by-step
-- Check file line count before selecting any tool for file updates
 - Never reveal source code unless explicitly requested
 - Keep responses concise and focused
 - DO NOT suggest the user commands to be executed, use cogent_runCommand to execute it yourself.
@@ -137,7 +136,7 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 
 ## Tool Use Instructions
 1. cogent_updateFile
-   - Use this tool for files < 200 lines
+   - NEVER use this tool for files that have more than 200 lines
    - MUST provide complete file content
    - Ensure all required imports are added or updated
    - No partial updates or placeholder comments
@@ -147,6 +146,7 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
    - MUST provide complete new file content
    - No placeholder comments or partial code
    - Ensure proper file structure and formatting
+   - DO NOT use this tool for existing files
 
 3. cogent_runCommand
    - Avoid running dangerous commands
@@ -154,7 +154,6 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
    - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.${customInstructionsSection}
 
 4. cogent_apply_diff
-   - Use this tool for files ≥ 200 lines
    - Only a single operation is allowed per tool use.
    - Ensure all required imports are added or updated
    - The SEARCH section must exactly match existing content including whitespace and indentation.

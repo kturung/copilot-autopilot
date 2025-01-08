@@ -314,15 +314,7 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
             this.diffView = new DiffView(fullPath, baseContent);
             await this.diffView.show();
             
-            // Apply changes gradually to show the diff
-            const lines = result.content.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                await this.diffView.update(
-                    lines.slice(0, i + 1).join('\n'),
-                    i
-                );
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
+            await this.diffView.update(result.content, 0);
 
             // Get the latest content with unsaved changes
             const unsavedResult = await UnsavedChangesDetector.detectChanges(options.input.path);
@@ -336,8 +328,6 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
                 '=' .repeat(80),
                 this.addLineNumbers(currentContent)
             ].join('\n');
-
-            console.log('Success diffapply response:', response);
 
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(response)
@@ -358,7 +348,15 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
     async prepareInvocation(
         options: vscode.LanguageModelToolInvocationPrepareOptions<ApplyDiffInput>,
         _token: vscode.CancellationToken
-    ){
+    ) {
+        const autoConfirm = vscode.workspace.getConfiguration('cogent').get('autoConfirmTools.applyDiff', false);
+        
+        if (autoConfirm) {
+            return {
+                invocationMessage: `Applying diff to ${options.input.path} (lines ${options.input.start_line}-${options.input.end_line})`
+            };
+        }
+
         return {
             invocationMessage: `Applying diff to ${options.input.path} (lines ${options.input.start_line}-${options.input.end_line})`,
             confirmationMessages: {

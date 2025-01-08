@@ -56,4 +56,14 @@ export class FileReadTool implements vscode.LanguageModelTool<IFileOperationPara
             ]);
         }
     }
+
+    async prepareInvocation(
+            options: vscode.LanguageModelToolInvocationPrepareOptions<IFileOperationParams>,
+            _token: vscode.CancellationToken
+        ) {
+            return {
+                invocationMessage: `Reading files: ${JSON.stringify(options.input.paths)}`
+            };
+            
+        }
 }

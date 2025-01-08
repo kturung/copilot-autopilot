@@ -27,6 +27,39 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Include full workspace content in the initial prompt. If disabled, files will be read on demand.\n\n Note: Not recommended for large workspaces."
+                },
+                "cogent.autoConfirmTools": {
+                    "type": "object",
+                    "properties": {
+                        "writeFile": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Auto confirm file creation operations"
+                        },
+                        "updateFile": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Auto confirm file update operations"
+                        },
+                        "runCommand": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Auto confirm command execution"
+                        },
+                        "applyDiff": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "Auto confirm diff apply operations"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "default": {
+                        "writeFile": false,
+                        "updateFile": false,
+                        "runCommand": false,
+                        "applyDiff": false
+                    },
+                    "description": "Configure which tools should auto-confirm their operations without showing confirmation dialog"
                 }
             }
         },

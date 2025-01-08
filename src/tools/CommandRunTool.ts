@@ -122,6 +122,14 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
         options: vscode.LanguageModelToolInvocationPrepareOptions<ICommandParams>,
         _token: vscode.CancellationToken
     ) {
+        const autoConfirm = vscode.workspace.getConfiguration('cogent').get('autoConfirmTools.runCommand', false);
+        
+        if (autoConfirm) {
+            return {
+                invocationMessage: `Executing command: ${options.input.command}`
+            };
+        }
+
         return {
             invocationMessage: `Executing command: ${options.input.command}`,
             confirmationMessages: {

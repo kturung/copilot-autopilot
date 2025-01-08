@@ -27,6 +27,16 @@ export class FileUpdateTool implements vscode.LanguageModelTool<IFileOperationPa
             const filePath = path.join(workspacePath, options.input.path);
             const originalContent = await fs.readFile(filePath, 'utf-8');
             
+            // Check if file is too large
+            const lineCount = originalContent.split('\n').length;
+            if (lineCount > 200) {
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        "This file exceeds 200 lines. Please use the 'cogent_applyDiff' tool instead for better handling of large file modifications."
+                    )
+                ]);
+            }
+            
             this.diffView = new DiffView(filePath, originalContent);
             await this.diffView.show();
             
@@ -58,6 +68,14 @@ export class FileUpdateTool implements vscode.LanguageModelTool<IFileOperationPa
         options: vscode.LanguageModelToolInvocationPrepareOptions<IFileOperationParams>,
         _token: vscode.CancellationToken
     ) {
+        const autoConfirm = vscode.workspace.getConfiguration('cogent').get('autoConfirmTools.updateFile', false);
+        
+        if (autoConfirm) {
+            return {
+                invocationMessage: `Updating file: ${options.input.path}`
+            };
+        }
+
         return {
             invocationMessage: `Updating file: ${options.input.path}`,
             confirmationMessages: {

@@ -82,12 +82,8 @@ export function registerToolUserChatParticipant(context: vscode.ExtensionContext
                     stream.markdown(part.value);
                     responseStr += part.value;
                 } else if (part instanceof vscode.LanguageModelToolCallPart) {
-                    if (part.name === 'cogent_updateFile') {
+                    if (part.name === 'cogent_updateFile' || part.name === 'cogent_applyDiff') {
                         hasFileUpdateCall = true;
-                    }
-                    if (part.name === 'cogent_readFile') {
-                        const input = part.input as ReadFileToolInput;
-                        stream.markdown(`\n\nReading files: ${JSON.stringify(input.paths)}`);
                     }
                     toolCalls.push(part);
                 }
@@ -126,7 +122,7 @@ export function registerToolUserChatParticipant(context: vscode.ExtensionContext
         if (hasFileUpdateCall) {
             stream.button({
                 command: 'cogent.applyChanges',
-                title: vscode.l10n.t('Apply All Changes')
+                title: vscode.l10n.t('Save All Changes')
             });
         }
 

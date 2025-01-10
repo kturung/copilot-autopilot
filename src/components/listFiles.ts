@@ -1,6 +1,24 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+function readGitignore(workspacePath: string): string[] {
+    const gitignorePath = path.join(workspacePath, '.gitignore');
+    if (!fs.existsSync(gitignorePath)) {
+        return [];
+    }
+
+    try {
+        const content = fs.readFileSync(gitignorePath, 'utf-8');
+        return content
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line && !line.startsWith('#'))
+            .map(pattern => pattern.replace(/^\/+|\/+$/g, '')); // Remove leading/trailing slashes
+    } catch {
+        return [];
+    }
+}
+
 const defaultIgnored = [
     // Build and distribution
     'dist',
@@ -55,6 +73,7 @@ const defaultIgnored = [
     // Logs
     'logs',
     '*.log',
+    '*.txt',
     'npm-debug.log*',
     'yarn-debug.log*',
     'yarn-error.log*',
@@ -78,17 +97,13 @@ const defaultIgnored = [
 
 ];
 
-function getGitignorePatterns(dir: string): string[] {
-    const gitignorePath = path.join(dir, '.gitignore');
-    if (!fs.existsSync(gitignorePath)) return [];
+// Replace the direct push with Set operation to handle duplicates
+const defaultIgnoredSet = new Set(defaultIgnored);
+readGitignore(process.cwd()).forEach(pattern => defaultIgnoredSet.add(pattern));
+const defaultIgnoredArray = Array.from(defaultIgnoredSet);
 
-    const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
-    return gitignoreContent
-        .split('\n')
-        .filter(Boolean)
-        .map(line => line.trim())
-        .filter(line => !line.startsWith('#'));
-}
+// Add debug log
+console.log('Final ignore patterns:', defaultIgnoredArray);
 
 function isIgnored(filePath: string, ignorePatterns: string[]): boolean {
     return ignorePatterns.some(pattern => {
@@ -108,7 +123,6 @@ interface FileDetails {
 
 export function listImportantFiles(dir: string, level: number = 0, contents: { [path: string]: string } = {}): FileDetails {
     let structure = '';
-    const ignorePatterns = [...defaultIgnored, ...getGitignorePatterns(dir)];
     const list = fs.readdirSync(dir);
 
     list.forEach(file => {
@@ -116,7 +130,7 @@ export function listImportantFiles(dir: string, level: number = 0, contents: { [
         const relativePath = path.relative(dir, filePath);
         const stat = fs.statSync(filePath);
 
-        if (isIgnored(relativePath, ignorePatterns)) {
+        if (isIgnored(relativePath, defaultIgnoredArray)) {
             return;
         }
 
@@ -128,6 +142,12 @@ export function listImportantFiles(dir: string, level: number = 0, contents: { [
         } else {
             structure += '  '.repeat(level) + file + '\n';
             try {
+                // Check file size first
+                const stats = fs.statSync(filePath);
+                if (stats.size > 1024 * 1024) { // 1MB limit
+                    contents[relativePath] = `File too large (${Math.round(stats.size / 1024 / 1024)}MB), skipped`;
+                    return;
+                }
                 contents[relativePath] = fs.readFileSync(filePath, 'utf-8');
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';

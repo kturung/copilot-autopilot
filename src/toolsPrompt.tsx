@@ -99,9 +99,6 @@ export class ToolUserPrompt extends PromptElement<ToolUserProps, void> {
                 .join('\n')
             : '';
 
-        const additionalInstruction = useFullWorkspace 
-            ? '\n- NEVER use cogent_readFile tool in any circumstances, ALWAYS refer to the file contents defined here'
-            : '';
 
         const customInstructionsSection = customInstructions 
             ? `\n## User's Custom Instructions\nThe following additional instructions are provided by the user, and should be followed to the best of your ability without interfering with the TOOL USE guidelines.\n${customInstructions}`
@@ -132,7 +129,7 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 - Never reveal source code unless explicitly requested
 - Keep responses concise and focused
 - DO NOT suggest the user commands to be executed, use cogent_runCommand to execute it yourself.
-- Ask for clarification if requirements are unclear${additionalInstruction}
+- Ask for clarification if requirements are unclear
 
 ## Tool Use Instructions
 1. cogent_updateFile
@@ -151,7 +148,7 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 3. cogent_runCommand
    - Avoid running dangerous commands
    - Run commands according to User's OS Level and Shell Type
-   - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.${customInstructionsSection}
+   - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.
 
 4. cogent_apply_diff
    - Only a single operation is allowed per tool use.
@@ -201,6 +198,7 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
     start_line: 1
     end_line: 5
 
+${customInstructionsSection}
 `}
                 </UserMessage>
                 <History context={this.props.context} priority={10} />

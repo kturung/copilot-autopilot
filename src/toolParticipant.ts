@@ -30,9 +30,10 @@ export function registerToolUserChatParticipant(context: vscode.ExtensionContext
 
         const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot', family: 'claude-3.5-sonnet' });
 
-        const tools = vscode.lm.tools.filter(tool => 
-            tool.name.startsWith('cogent_') || 
-            tool.name === 'multi-tool-use-parallel'
+        const useFullWorkspace = vscode.workspace.getConfiguration('cogent').get('use_full_workspace', false);
+        const tools = vscode.lm.tools.filter(tool =>
+            tool.name.startsWith('cogent_') &&
+            (!useFullWorkspace || tool.name !== 'cogent_readFile')
         );
 
         const options: vscode.LanguageModelChatRequestOptions = {

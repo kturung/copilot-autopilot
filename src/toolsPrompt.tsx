@@ -19,6 +19,7 @@ import { isTsxToolUserMetadata } from './toolParticipant';
 import { listImportantFiles } from './components/listFiles';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Logger } from './components/Logger';
 
 export interface ToolCallRound {
     response: string;
@@ -85,7 +86,9 @@ export class ToolUserPrompt extends PromptElement<ToolUserProps, void> {
     }
 
     async render(_state: void, _sizing: PromptSizing) {
+        const logger = Logger.getInstance();
         const { structure, contents } = this.getProjectStructure();
+        logger.debug(`Project file structure:\n ${structure}`);
         const useFullWorkspace = vscode.workspace.getConfiguration('cogent').get('use_full_workspace', true);
         const customInstructions = await this.getCustomInstructions();
         const osLevel = this.getOSLevel();

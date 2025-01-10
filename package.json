@@ -26,7 +26,8 @@
                 "cogent.use_full_workspace": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Include full workspace content in the initial prompt. If disabled, files will be read on demand.\n\n Note: Not recommended for large workspaces."
+                    "description": "Include full workspace content in the initial prompt. If disabled, files will be read on demand.\n\n Note: Not recommended for large workspaces.",
+                    "order": 1
                 },
                 "cogent.autoConfirmTools": {
                     "type": "object",
@@ -59,7 +60,14 @@
                         "runCommand": false,
                         "applyDiff": false
                     },
-                    "description": "Configure which tools should auto-confirm their operations without showing confirmation dialog"
+                    "description": "Configure which tools should auto-confirm their operations without showing confirmation dialog",
+                    "order": 2
+                },
+                "cogent.debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable debug logging in the output channel",
+                    "order": 3
                 }
             }
         },

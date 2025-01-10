@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { registerToolUserChatParticipant } from './toolParticipant';
 import { FileReadTool, FileWriteTool, FileUpdateTool, CommandRunTool, ApplyDiffTool } from './tools';
 import { DiffView } from './components/DiffView';
+import { Logger } from './components/Logger';
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Cogent extension is now active!');
+    const logger = Logger.getInstance();
+    logger.info('Cogent extension is now active!');
     
     // Register tools
     context.subscriptions.push(
@@ -20,5 +22,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+    Logger.getInstance().dispose();
     DiffView.dispose();
 }

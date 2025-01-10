@@ -1,20 +1,28 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { Logger } from './Logger';
 
 function readGitignore(workspacePath: string): string[] {
+    const logger = Logger.getInstance();
     const gitignorePath = path.join(workspacePath, '.gitignore');
     if (!fs.existsSync(gitignorePath)) {
+        logger.info('No .gitignore file found at: ' + gitignorePath);
         return [];
     }
 
     try {
         const content = fs.readFileSync(gitignorePath, 'utf-8');
-        return content
+
+        const patterns = content
             .split('\n')
             .map(line => line.trim())
             .filter(line => line && !line.startsWith('#'))
             .map(pattern => pattern.replace(/^\/+|\/+$/g, '')); // Remove leading/trailing slashes
-    } catch {
+        
+        logger.debug('Processed .gitignore patterns: ' + JSON.stringify(patterns, null, 2));
+        return patterns;
+    } catch (error) {
+        logger.error('Error reading .gitignore: ' + error);
         return [];
     }
 }
@@ -73,7 +81,6 @@ const defaultIgnored = [
     // Logs
     'logs',
     '*.log',
-    '*.txt',
     'npm-debug.log*',
     'yarn-debug.log*',
     'yarn-error.log*',
@@ -97,14 +104,6 @@ const defaultIgnored = [
 
 ];
 
-// Replace the direct push with Set operation to handle duplicates
-const defaultIgnoredSet = new Set(defaultIgnored);
-readGitignore(process.cwd()).forEach(pattern => defaultIgnoredSet.add(pattern));
-const defaultIgnoredArray = Array.from(defaultIgnoredSet);
-
-// Add debug log
-console.log('Final ignore patterns:', defaultIgnoredArray);
-
 function isIgnored(filePath: string, ignorePatterns: string[]): boolean {
     return ignorePatterns.some(pattern => {
         const cleanPattern = pattern.replace(/\/$/, '');
@@ -121,22 +120,31 @@ interface FileDetails {
     contents: { [path: string]: string };
 }
 
-export function listImportantFiles(dir: string, level: number = 0, contents: { [path: string]: string } = {}): FileDetails {
+export function listImportantFiles(dir: string, level: number = 0, contents: { [path: string]: string } = {}, ignorePatterns?: string[]): FileDetails {
+    const logger = Logger.getInstance();
     let structure = '';
     const list = fs.readdirSync(dir);
+
+    // Only read .gitignore at root level
+    if (level === 0) {
+        const gitignorePatterns = readGitignore(dir);
+        const defaultIgnoredSet = new Set([...defaultIgnored, ...gitignorePatterns]);
+        ignorePatterns = Array.from(defaultIgnoredSet);
+        logger.debug('Root level ignore patterns: ' + JSON.stringify(ignorePatterns, null, 2));
+    }
 
     list.forEach(file => {
         const filePath = path.join(dir, file);
         const relativePath = path.relative(dir, filePath);
         const stat = fs.statSync(filePath);
 
-        if (isIgnored(relativePath, defaultIgnoredArray)) {
+        if (isIgnored(relativePath, ignorePatterns || [])) {
             return;
         }
 
         if (stat && stat.isDirectory()) {
             structure += '  '.repeat(level) + file + '/\n';
-            const subDirResult = listImportantFiles(filePath, level + 1, contents);
+            const subDirResult = listImportantFiles(filePath, level + 1, contents, ignorePatterns);
             structure += subDirResult.structure;
             Object.assign(contents, subDirResult.contents);
         } else {

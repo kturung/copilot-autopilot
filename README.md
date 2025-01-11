@@ -89,7 +89,7 @@ Think of it as leaving a note for your AI roommate about how to keep the code cl
 
 ### Auto Approval Mode
 
-Want to live life on the edge? Enable auto approval for specific operations:
+Want to live life on the edge?🎢 Enable auto approval for specific operations:
 
 ![auto_approve_tools](assets/auto-approve-tools.png)
 

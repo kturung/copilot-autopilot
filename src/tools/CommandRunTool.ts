@@ -25,6 +25,18 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
     private static terminal: vscode.Terminal | undefined;
     private static nodePty = loadNodePty();
 
+    // Add prompt patterns for different shells
+    private readonly PROMPT_PATTERNS = {
+        zsh: /[\n\r][^\n\r]*(%|#|\$)\s*$/,
+        bash: /[\n\r][^\n\r]*(\$|#)\s*$/,
+        powershell: /[\n\r][^\n\r]*PS[^\n\r>]*>\s*$/
+    };
+
+    private isPrompt(data: string, shell: string): boolean {
+        const pattern = this.PROMPT_PATTERNS[shell as keyof typeof this.PROMPT_PATTERNS];
+        return pattern ? pattern.test(data) : false;
+    }
+
     private filterPowerShellHeader(text: string): string {
         if (os.platform() === 'win32') {
             const lines = text.split('\n');
@@ -52,10 +64,11 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
                 ]));
             }
 
-            const shell = os.platform() === 'win32' ? 'powershell.exe' : 'zsh';
+            const shell = os.platform() === 'win32' ? 'powershell' : 'zsh';
             let output = '';
+            let outputBuffer = '';
+            let commandStarted = false;
             let writeEmitter = new vscode.EventEmitter<string>();
-
 
             const ptyProcess = CommandRunTool.nodePty.spawn(shell, [], {
                 name: 'xterm-color',
@@ -67,7 +80,23 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
 
             ptyProcess.onData((data: string) => {
                 const filteredData = stripAnsi(this.filterPowerShellHeader(data));
-                output += filteredData;
+                outputBuffer += filteredData;
+
+                // Only start capturing output after the command is sent
+                if (commandStarted) {
+                    output += filteredData;
+                }
+
+                // Check for shell prompt after command execution
+                if (commandStarted && this.isPrompt(outputBuffer, shell)) {
+                    // Remove the prompt from the output
+                    output = output.replace(this.PROMPT_PATTERNS[shell as keyof typeof this.PROMPT_PATTERNS], '');
+                    ptyProcess.kill();
+                    resolve(new vscode.LanguageModelToolResult([
+                        new vscode.LanguageModelTextPart(stripAnsi(output.trim()))
+                    ]));
+                }
+
                 writeEmitter.fire(data);
             });
 
@@ -76,11 +105,10 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
                 pty: {
                     onDidWrite: writeEmitter.event,
                     open: () => {
+                        // Clear the buffer before sending the command
+                        outputBuffer = '';
                         ptyProcess.write(`${options.input.command}\r`);
-                        // Add exit command after the main command
-                        setTimeout(() => {
-                            ptyProcess.write('\rexit\r');
-                        }, 100);
+                        commandStarted = true;
                     },
                     close: () => {
                         ptyProcess.kill();
@@ -115,14 +143,6 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
             });
 
             ptyTerminal.show();
-            
-            // Listen for process exit
-            ptyProcess.onExit(() => {
-                clearTimeout(exitTimeout);
-                resolve(new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(stripAnsi(output) || 'Command completed')
-                ]));
-            });
         });
     }
 

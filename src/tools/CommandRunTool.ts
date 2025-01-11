@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
+import { Logger } from '../components/Logger';
 
 interface ICommandParams {
     command: string;
@@ -14,7 +15,8 @@ function loadNodePty() {
         const moduleName = path.join(vscode.env.appRoot, "node_modules", "node-pty");
         return requireFunc(moduleName);
     } catch (error) {
-        console.error('Failed to load node-pty:', error);
+        const logger = Logger.getInstance();
+        logger.error(`Failed to load node-pty: ${error}`);
         return null;
     }
 }
@@ -93,12 +95,18 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
                 }
             });
 
+            // Get configured timeout (in seconds) and convert to milliseconds
+            const timeoutSeconds = vscode.workspace.getConfiguration('cogent').get('commandTimeout', 30);
+            const timeoutMs = timeoutSeconds * 1000;
+
             let exitTimeout = setTimeout(() => {
                 ptyProcess.kill();
                 resolve(new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(stripAnsi(output) || 'Command timed out')
+                    new vscode.LanguageModelTextPart(
+                        stripAnsi(output) || `Command timed out after ${timeoutSeconds} seconds`
+                    )
                 ]));
-            }, 30000); // 30 second timeout
+            }, timeoutMs);
 
             token.onCancellationRequested(() => {
                 clearTimeout(exitTimeout);
@@ -122,6 +130,14 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
         options: vscode.LanguageModelToolInvocationPrepareOptions<ICommandParams>,
         _token: vscode.CancellationToken
     ) {
+        const autoConfirm = vscode.workspace.getConfiguration('cogent').get('autoConfirmTools.runCommand', false);
+        
+        if (autoConfirm) {
+            return {
+                invocationMessage: `Executing command: ${options.input.command}`
+            };
+        }
+
         return {
             invocationMessage: `Executing command: ${options.input.command}`,
             confirmationMessages: {

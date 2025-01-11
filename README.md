@@ -6,6 +6,12 @@
 
 Cogent is an agentic Github Copilot VSCode chat extension that transforms your coding environment into an autonomous development powerhouse. Think of it as having a brilliant (and slightly nerdy) AI agent who not only understands your code but can independently take actions while keeping you in control. It's your witty companion that makes coding feel like pair programming with a super-smart friend who never needs coffee breaks!
 
+<div align="center">
+  
+[![Visual Studio Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/kturung.cogent?color=blue&label=VsCode%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=kturung.cogent)
+
+</div>
+
 ## 🎯 Prerequisites
 
 Before we embark on this magical journey, make sure you have:
@@ -17,7 +23,7 @@ Before we embark on this magical journey, make sure you have:
 ## ✨ Features
 
 - 🤖 **Autonomous Agent** - Works independently with minimal supervision
-- 📝 **Smart File Operations** - Create, read, and update files with AI precision
+- 📝 **Smart File Operations** - Create, read, update and diff-apply for precise updates to also handle large files with AI precision
 - 🎮 **Command Execution** - Run terminal commands without leaving your chat
 - 🧠 **Context-Aware** - Understands your entire project structure
 - 🤝 **Pair Programming** - Like pair programming, but your partner never needs coffee breaks
@@ -61,14 +67,10 @@ Want to package the extension for distribution? Easy peasy:
 
 Cogent can be as nosy or respectful as you want with your workspace:
 
-```json
-{
-    "cogent.use_full_workspace": true  // Default: false
-}
-```
+![use_full_workspace](assets/use-full-workspace.png)
 
 - When `true`: Cogent loads your entire workspace upfront. Respects your .gitignore file
-- When `false`: Reads files on-demand
+- When `false`: Reads files on-demand. This is the default setting.
 
 > 💡 Tip: Disable for large workspaces unless you want Cogent to have a coffee break while loading!
 
@@ -84,6 +86,14 @@ Want Cogent to follow your house rules? Create a `.cogentrules` file in your wor
 ```
 
 Think of it as leaving a note for your AI roommate about how to keep the code clean! 🧹
+
+### Auto Approval Mode
+
+Want to live life on the edge?🎢 Enable auto approval for specific operations:
+
+![auto_approve_tools](assets/auto-approve-tools.png)
+
+> ⚠️ WARNING: Enabling auto approval is like giving your AI assistant caffeine and a credit card. Fun things will happen faster, but maybe keep an eye on those pull requests! Remember: with great automation comes great "what did I just approve?" moments. 😅
 
 ## 🎮 Usage
 

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { Logger } from './Logger';
 
 export class DiffView {
     private static readonly scheme = 'cogent-diff';
@@ -36,6 +37,7 @@ export class DiffView {
 
     async show(): Promise<boolean> {
         try {
+            const logger = Logger.getInstance();
             // Open the file first
             this.document = await vscode.workspace.openTextDocument(this.originalUri);
             
@@ -64,7 +66,8 @@ export class DiffView {
 
             return true;
         } catch (error) {
-            console.error('Failed to open diff view:', error);
+            const logger = Logger.getInstance();
+            logger.error(`Failed to open diff view: ${error}`);
             return false;
         }
     }

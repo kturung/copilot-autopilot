@@ -19,6 +19,7 @@ import { isTsxToolUserMetadata } from './toolParticipant';
 import { listImportantFiles } from './components/listFiles';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Logger } from './components/Logger';
 
 export interface ToolCallRound {
     response: string;
@@ -73,8 +74,21 @@ export class ToolUserPrompt extends PromptElement<ToolUserProps, void> {
                 : 'bash';
     }
 
+    private addLineNumbers(content: string, startLine: number = 1): string {
+        const lines = content.split('\n');
+        const maxLineNumberWidth = String(startLine + lines.length - 1).length;
+        return lines
+            .map((line, index) => {
+                const lineNumber = String(startLine + index).padStart(maxLineNumberWidth, ' ');
+                return `${lineNumber} | ${line}`;
+            })
+            .join('\n');
+    }
+
     async render(_state: void, _sizing: PromptSizing) {
+        const logger = Logger.getInstance();
         const { structure, contents } = this.getProjectStructure();
+        logger.debug(`Project file structure:\n ${structure}`);
         const useFullWorkspace = vscode.workspace.getConfiguration('cogent').get('use_full_workspace', true);
         const customInstructions = await this.getCustomInstructions();
         const osLevel = this.getOSLevel();
@@ -83,14 +97,11 @@ export class ToolUserPrompt extends PromptElement<ToolUserProps, void> {
         const fileContentsSection = useFullWorkspace
             ? Object.entries(contents)
                 .map(([filePath, content]) => {
-                    return `\n${'='.repeat(80)}\n📝 File: ${filePath}\n${'='.repeat(80)}\n${content}`;
+                    return `\n${'='.repeat(80)}\n📝 File: ${filePath}\n${'='.repeat(80)}\n${this.addLineNumbers(content)}`;
                 })
                 .join('\n')
             : '';
 
-        const additionalInstruction = useFullWorkspace 
-            ? '\n- NEVER use cogent_readFile tool in any circumstances, ALWAYS refer to the file contents defined here'
-            : '';
 
         const customInstructionsSection = customInstructions 
             ? `\n## User's Custom Instructions\nThe following additional instructions are provided by the user, and should be followed to the best of your ability without interfering with the TOOL USE guidelines.\n${customInstructions}`
@@ -121,11 +132,13 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 - Never reveal source code unless explicitly requested
 - Keep responses concise and focused
 - DO NOT suggest the user commands to be executed, use cogent_runCommand to execute it yourself.
-- Ask for clarification if requirements are unclear${additionalInstruction}
+- Ask for clarification if requirements are unclear
 
 ## Tool Use Instructions
 1. cogent_updateFile
+   - NEVER use this tool for files that have more than 200 lines
    - MUST provide complete file content
+   - Ensure all required imports are added or updated
    - No partial updates or placeholder comments
    - Include ALL existing code when updating
 
@@ -133,11 +146,62 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
    - MUST provide complete new file content
    - No placeholder comments or partial code
    - Ensure proper file structure and formatting
+   - DO NOT use this tool for existing files
 
 3. cogent_runCommand
    - Avoid running dangerous commands
    - Run commands according to User's OS Level and Shell Type
-   - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.${customInstructionsSection}
+   - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.
+
+4. cogent_apply_diff
+   - Only a single operation is allowed per tool use.
+   - Ensure all required imports are added or updated
+   - The SEARCH section must exactly match existing content including whitespace and indentation.
+   - If you're not confident in the exact content to search for, use the cogent_readFile tool first to get the exact content.
+
+    Diff format:
+    \`\`\`
+    <<<<<<< SEARCH
+    [exact content to find including whitespace]
+    =======
+    [new content to replace with]
+    >>>>>>> REPLACE
+    \`\`\`
+
+    Example:
+
+    Original file:
+    \`\`\`
+    1 | def calculate_total(items):
+    2 |     total = 0
+    3 |     for item in items:
+    4 |         total += item
+    5 |     return total
+    \`\`\`
+
+    Search/Replace content:
+    \`\`\`
+    <<<<<<< SEARCH
+    def calculate_total(items):
+        total = 0
+        for item in items:
+            total += item
+        return total
+    =======
+    def calculate_total(items):
+        """Calculate total with 10% markup"""
+        return sum(item * 1.1 for item in items)
+    >>>>>>> REPLACE
+    \`\`\`
+
+    Usage:
+
+    path: <File path here>
+    diff: <Your search/replace content here>
+    start_line: 1
+    end_line: 5
+
+${customInstructionsSection}
 `}
                 </UserMessage>
                 <History context={this.props.context} priority={10} />
@@ -208,9 +272,10 @@ interface ToolResultElementProps extends BasePromptElementProps {
 
 class ToolResultElement extends PromptElement<ToolResultElementProps, void> {
     async render(state: void, sizing: PromptSizing): Promise<PromptPiece | undefined> {
+        const logger = Logger.getInstance();
         const tool = vscode.lm.tools.find(t => t.name === this.props.toolCall.name);
         if (!tool) {
-            console.error(`Tool not found: ${this.props.toolCall.name}`);
+            logger.error(`Tool not found: ${this.props.toolCall.name}`);
             return <ToolMessage toolCallId={this.props.toolCall.callId}>Tool not found</ToolMessage>;
         }
 

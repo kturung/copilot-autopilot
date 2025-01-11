@@ -9,6 +9,17 @@ interface IFileOperationParams {
 }
 
 export class FileReadTool implements vscode.LanguageModelTool<IFileOperationParams> {
+    private addLineNumbers(content: string, startLine: number = 1): string {
+        const lines = content.split('\n');
+        const maxLineNumberWidth = String(startLine + lines.length - 1).length;
+        return lines
+            .map((line, index) => {
+                const lineNumber = String(startLine + index).padStart(maxLineNumberWidth, ' ');
+                return `${lineNumber} | ${line}`;
+            })
+            .join('\n');
+    }
+
     async invoke(
         options: vscode.LanguageModelToolInvocationOptions<IFileOperationParams>,
         _token: vscode.CancellationToken
@@ -29,7 +40,7 @@ export class FileReadTool implements vscode.LanguageModelTool<IFileOperationPara
                         '=' .repeat(80),
                         `📝 File: ${filePath}`,
                         '=' .repeat(80),
-                        content
+                        this.addLineNumbers(content)
                     ].join('\n');
                 } catch (err) {
                     return `Error reading ${filePath}: ${(err as Error)?.message}`;
@@ -45,4 +56,14 @@ export class FileReadTool implements vscode.LanguageModelTool<IFileOperationPara
             ]);
         }
     }
+
+    async prepareInvocation(
+            options: vscode.LanguageModelToolInvocationPrepareOptions<IFileOperationParams>,
+            _token: vscode.CancellationToken
+        ) {
+            return {
+                invocationMessage: `Reading files: ${JSON.stringify(options.input.paths)}`
+            };
+            
+        }
 }

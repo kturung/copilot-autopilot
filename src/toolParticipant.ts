@@ -23,16 +23,13 @@ export function isTsxToolUserMetadata(obj: unknown): obj is TsxToolUserMetadata 
 
 export function registerToolUserChatParticipant(context: vscode.ExtensionContext) {
     const handler: vscode.ChatRequestHandler = async (request: vscode.ChatRequest, chatContext: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken) => {
-        if (request.command === 'list') {
-            stream.markdown(`Available tools: ${vscode.lm.tools.map(tool => tool.name).join(', ')}\n\n`);
-            return;
-        }
 
         const [model] = await vscode.lm.selectChatModels({ vendor: 'copilot', family: 'claude-3.5-sonnet' });
 
-        const tools = vscode.lm.tools.filter(tool => 
-            tool.name.startsWith('cogent_') || 
-            tool.name === 'multi-tool-use-parallel'
+        const useFullWorkspace = vscode.workspace.getConfiguration('cogent').get('use_full_workspace', false);
+        const tools = vscode.lm.tools.filter(tool =>
+            tool.name.startsWith('cogent_') &&
+            (!useFullWorkspace || tool.name !== 'cogent_readFile')
         );
 
         const options: vscode.LanguageModelChatRequestOptions = {
@@ -82,12 +79,8 @@ export function registerToolUserChatParticipant(context: vscode.ExtensionContext
                     stream.markdown(part.value);
                     responseStr += part.value;
                 } else if (part instanceof vscode.LanguageModelToolCallPart) {
-                    if (part.name === 'cogent_updateFile') {
+                    if (part.name === 'cogent_updateFile' || part.name === 'cogent_applyDiff') {
                         hasFileUpdateCall = true;
-                    }
-                    if (part.name === 'cogent_readFile') {
-                        const input = part.input as ReadFileToolInput;
-                        stream.markdown(`\n\nReading files: ${JSON.stringify(input.paths)}`);
                     }
                     toolCalls.push(part);
                 }
@@ -126,7 +119,7 @@ export function registerToolUserChatParticipant(context: vscode.ExtensionContext
         if (hasFileUpdateCall) {
             stream.button({
                 command: 'cogent.applyChanges',
-                title: vscode.l10n.t('Apply All Changes')
+                title: vscode.l10n.t('Save All Changes')
             });
         }
 

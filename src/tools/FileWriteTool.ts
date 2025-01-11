@@ -22,10 +22,22 @@ export class FileWriteTool implements vscode.LanguageModelTool<IFileOperationPar
                 throw new Error('File path is required');
             }
             const filePath = path.join(workspacePath, options.input.path);
-            await fs.writeFile(filePath, options.input.content || '');
-            return new vscode.LanguageModelToolResult([
-                new vscode.LanguageModelTextPart(`File created successfully at ${options.input.path}`)
-            ]);
+
+            // Check if file already exists
+            try {
+                await fs.access(filePath);
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(
+                        `File ${options.input.path} already exists. To modify existing files, please use 'cogent_updateFile' or 'cogent_applyDiff' tools.`
+                    )
+                ]);
+            } catch {
+                // File doesn't exist, proceed with creation
+                await fs.writeFile(filePath, options.input.content || '');
+                return new vscode.LanguageModelToolResult([
+                    new vscode.LanguageModelTextPart(`File created successfully at ${options.input.path}`)
+                ]);
+            }
         } catch (err: unknown) {
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(`Error writing file: ${(err as Error)?.message}`)
@@ -37,6 +49,14 @@ export class FileWriteTool implements vscode.LanguageModelTool<IFileOperationPar
         options: vscode.LanguageModelToolInvocationPrepareOptions<IFileOperationParams>,
         _token: vscode.CancellationToken
     ) {
+        const autoConfirm = vscode.workspace.getConfiguration('cogent').get('autoConfirmTools.writeFile', false);
+        
+        if (autoConfirm) {
+            return {
+                invocationMessage: `Creating new file at ${options.input.path}`
+            };
+        }
+
         return {
             invocationMessage: `Creating new file at ${options.input.path}`,
             confirmationMessages: {

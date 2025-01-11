@@ -23,7 +23,7 @@ Before we embark on this magical journey, make sure you have:
 ## ✨ Features
 
 - 🤖 **Autonomous Agent** - Works independently with minimal supervision
-- 📝 **Smart File Operations** - Create, read, and update and diff-apply for precise updates to also handle large files with AI precision
+- 📝 **Smart File Operations** - Create, read, update and diff-apply for precise updates to also handle large files with AI precision
 - 🎮 **Command Execution** - Run terminal commands without leaving your chat
 - 🧠 **Context-Aware** - Understands your entire project structure
 - 🤝 **Pair Programming** - Like pair programming, but your partner never needs coffee breaks

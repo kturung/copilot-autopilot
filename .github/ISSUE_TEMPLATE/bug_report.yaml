@@ -1,0 +1,50 @@
+name: Bug Report
+description: File a new bug report to help us improve
+labels: ["bug"]
+body:
+    - type: textarea
+      id: bug-description
+      attributes:
+          label: Describe the bug
+          description: What went wrong? What did you expect to happen instead?
+          placeholder: Describe what occurred and what should have happened
+      validations:
+          required: true
+    - type: textarea
+      id: steps
+      attributes:
+          label: Reproduction steps
+          description: List the exact steps needed to reproduce this issue
+          value: |
+              1.
+              2.
+              3.
+      validations:
+          required: true
+    - type: textarea
+      id: logs
+      attributes:
+          label: Logs
+          description: Include generated logs if requested(enable cogent.debug option)
+          render: shell
+    - type: input
+      id: operating-system
+      attributes:
+          label: OS Details
+          description: Which operating system and version are you running?
+          placeholder: "Example: macOS 13.4, Windows 11 Pro"
+      validations:
+          required: true
+    - type: input
+      id: cogent-version
+      attributes:
+          label: Software Version
+          description: Which version of Cogent are you running?
+          placeholder: "Example: 1.0.0"
+      validations:
+          required: true
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Additional Information
+          description: Share any other relevant details, including screenshots or related issues

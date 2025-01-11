@@ -68,6 +68,12 @@
                     "default": false,
                     "description": "Enable debug logging in the output channel",
                     "order": 3
+                },
+                "cogent.commandTimeout": {
+                    "type": "number",
+                    "default": 45,
+                    "description": "Timeout in seconds for terminal commands",
+                    "order": 4
                 }
             }
         },

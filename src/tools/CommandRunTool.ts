@@ -93,12 +93,18 @@ export class CommandRunTool implements vscode.LanguageModelTool<ICommandParams> 
                 }
             });
 
+            // Get configured timeout (in seconds) and convert to milliseconds
+            const timeoutSeconds = vscode.workspace.getConfiguration('cogent').get('commandTimeout', 30);
+            const timeoutMs = timeoutSeconds * 1000;
+
             let exitTimeout = setTimeout(() => {
                 ptyProcess.kill();
                 resolve(new vscode.LanguageModelToolResult([
-                    new vscode.LanguageModelTextPart(stripAnsi(output) || 'Command timed out')
+                    new vscode.LanguageModelTextPart(
+                        stripAnsi(output) || `Command timed out after ${timeoutSeconds} seconds`
+                    )
                 ]));
-            }, 30000); // 30 second timeout
+            }, timeoutMs);
 
             token.onCancellationRequested(() => {
                 clearTimeout(exitTimeout);

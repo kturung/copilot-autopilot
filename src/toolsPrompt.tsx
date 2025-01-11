@@ -272,9 +272,10 @@ interface ToolResultElementProps extends BasePromptElementProps {
 
 class ToolResultElement extends PromptElement<ToolResultElementProps, void> {
     async render(state: void, sizing: PromptSizing): Promise<PromptPiece | undefined> {
+        const logger = Logger.getInstance();
         const tool = vscode.lm.tools.find(t => t.name === this.props.toolCall.name);
         if (!tool) {
-            console.error(`Tool not found: ${this.props.toolCall.name}`);
+            logger.error(`Tool not found: ${this.props.toolCall.name}`);
             return <ToolMessage toolCallId={this.props.toolCall.callId}>Tool not found</ToolMessage>;
         }
 

@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { DiffView } from '../components/DiffView';
 import { UnsavedChangesDetector } from '../components/UnsavedChangesDetector';
+import { Logger } from '../components/Logger';
 
 // Types
 type DiffResult = 
@@ -338,7 +339,8 @@ export class ApplyDiffTool implements vscode.LanguageModelTool<ApplyDiffInput> {
                 await this.diffView.close();
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`Failed to apply diff: ${errorMessage}`);
+            const logger = Logger.getInstance();
+            logger.error(`Failed to apply diff: ${errorMessage}`);
             return new vscode.LanguageModelToolResult([
                 new vscode.LanguageModelTextPart(`Failed to apply diff: ${errorMessage}`)
             ]);

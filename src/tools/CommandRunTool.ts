@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as os from 'os';
+import { Logger } from '../components/Logger';
 
 interface ICommandParams {
     command: string;
@@ -14,7 +15,8 @@ function loadNodePty() {
         const moduleName = path.join(vscode.env.appRoot, "node_modules", "node-pty");
         return requireFunc(moduleName);
     } catch (error) {
-        console.error('Failed to load node-pty:', error);
+        const logger = Logger.getInstance();
+        logger.error(`Failed to load node-pty: ${error}`);
         return null;
     }
 }

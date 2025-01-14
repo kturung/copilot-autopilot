@@ -8,7 +8,7 @@ Cogent is an agentic Github Copilot VSCode chat extension that transforms your c
 
 <div align="center">
   
-[![Visual Studio Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/kturung.cogent?color=blue&label=VsCode%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=kturung.cogent)
+[![Visual Studio Code Marketplace](https://img.shields.io/badge/VsCode%20Marketplace-v1.0.0-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=kturung.cogent)
 
 </div>
 

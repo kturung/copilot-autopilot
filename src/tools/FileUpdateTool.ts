@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { DiffView } from '../components/DiffView';
+import { UnsavedChangesDetector } from '../components/UnsavedChangesDetector';
 
 interface IFileOperationParams {
     path?: string;
@@ -25,19 +26,21 @@ export class FileUpdateTool implements vscode.LanguageModelTool<IFileOperationPa
                 throw new Error('File path is required');
             }
             const filePath = path.join(workspacePath, options.input.path);
-            const originalContent = await fs.readFile(filePath, 'utf-8');
             
-            // Check if file is too large
-            const lineCount = originalContent.split('\n').length;
+            // Check for unsaved changes first
+            const unsavedChanges = await UnsavedChangesDetector.detectChanges(options.input.path);
+            const currentContent = unsavedChanges.editorContent || await fs.readFile(filePath, 'utf-8');
+            
+            // Check if file is too large using current content
+            const lineCount = currentContent.split('\n').length;
             if (lineCount > 200) {
                 return new vscode.LanguageModelToolResult([
                     new vscode.LanguageModelTextPart(
-                        "This file exceeds 200 lines. Please use the 'cogent_applyDiff' tool instead for better handling of large file modifications."
+                        "This file exceeds 200 lines. Please retry the operation using the 'cogent_applyDiff' tool instead for better handling of large file modifications."
                     )
                 ]);
             }
-            
-            this.diffView = new DiffView(filePath, originalContent);
+            this.diffView = new DiffView(filePath, currentContent);
             await this.diffView.show();
             
             if (options.input.content) {

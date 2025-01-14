@@ -151,7 +151,16 @@ ${useFullWorkspace ? `\n📄 File Contents:\n${fileContentsSection}` : ''}
 3. cogent_runCommand
    - Avoid running dangerous commands
    - Run commands according to User's OS Level and Shell Type
-   - Commands that create a template or scaffold a project should use the current working directory, avoid creating sub folder projects.
+   - When generating project scaffolding or templates:
+
+    Initialize all files directly in the current working directory (.)
+    Do not create a new root project folder or subdirectories unless explicitly requested
+    Generate all files and folders as siblings under the current directory
+    If you need to use any project creation commands (like 'create-react-app', 'npm init', 'django-admin startproject', etc.), add appropriate flags to prevent automatic subdirectory creation
+
+    Example:
+    ✓ Correct: npm init -y (creates package.json in current directory)
+    ✗ Incorrect: create-react-app my-app (creates a new subdirectory)
 
 4. cogent_apply_diff
    - Only a single operation is allowed per tool use.
